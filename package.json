@@ -1,0 +1,112 @@
+{
+  "name": "diff-reviewer",
+  "displayName": "Diff Reviewer",
+  "description": "Interactive diff review UI for approving or rejecting individual hunks",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "diffReviewer",
+          "title": "Diff Reviewer",
+          "icon": "media/icons/diff-approval.svg"
+        }
+      ]
+    },
+    "views": {
+      "diffReviewer": [
+        {
+          "id": "diffReviewer.fileTree",
+          "name": "Modified Files"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "diffReviewer.refresh",
+        "title": "Refresh Diff",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "diffReviewer.openFile",
+        "title": "Open Diff View"
+      },
+      {
+        "command": "diffReviewer.undo",
+        "title": "Undo Last Action",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "diffReviewer.approveFile",
+        "title": "Approve File",
+        "icon": "$(check)"
+      },
+      {
+        "command": "diffReviewer.rejectFile",
+        "title": "Reject File",
+        "icon": "$(close)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "diffReviewer.refresh",
+          "when": "view == diffReviewer.fileTree",
+          "group": "navigation"
+        },
+        {
+          "command": "diffReviewer.undo",
+          "when": "view == diffReviewer.fileTree",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "diffReviewer.approveFile",
+          "when": "view == diffReviewer.fileTree && viewItem == diffFile",
+          "group": "inline@1"
+        },
+        {
+          "command": "diffReviewer.rejectFile",
+          "when": "view == diffReviewer.fileTree && viewItem == diffFile",
+          "group": "inline@2"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "test": "node --import tsx --test test/*.test.ts",
+    "lint": "eslint . && tsc --noEmit",
+    "lint:fix": "eslint . --fix",
+    "ts:check": "tsc --noEmit",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^8.56.0",
+    "@typescript-eslint/parser": "^8.56.0",
+    "esbuild": "^0.24.0",
+    "eslint": "^10.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "husky": "^9.1.7",
+    "prettier": "^3.8.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0",
+    "typescript-eslint": "^8.56.0"
+  },
+  "dependencies": {
+    "highlight.js": "^11.11.1"
+  }
+}

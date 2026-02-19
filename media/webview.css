@@ -1,0 +1,428 @@
+body {
+  padding: 0;
+  margin: 0;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: var(--vscode-editor-font-size, 13px);
+  color: var(--vscode-editor-foreground);
+  background: var(--vscode-editor-background);
+}
+
+#container {
+  padding: 0;
+}
+
+/* ---- Top bar ---- */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--vscode-titleBar-activeBackground, #1e1e2e);
+  border-bottom: 1px solid var(--vscode-panel-border, #333);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.top-bar-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.top-bar-title {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--vscode-foreground);
+}
+
+.top-bar-edit-link {
+  font-size: 12px;
+  color: var(--vscode-textLink-foreground, #3794ff);
+  text-decoration: none;
+  cursor: pointer;
+  font-family: var(--vscode-font-family, sans-serif);
+}
+
+.top-bar-edit-link:hover {
+  text-decoration: underline;
+}
+
+.top-bar-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.top-bar-actions button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--vscode-font-family, sans-serif);
+  font-weight: 500;
+}
+
+/* ---- File content area ---- */
+.file-content {
+  padding: 0;
+}
+
+.file-line {
+  padding: 0 12px;
+  white-space: pre;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: var(--vscode-editor-font-size, 13px);
+  line-height: 1.5;
+  display: flex;
+}
+
+.file-line .line-number {
+  display: inline-block;
+  min-width: 40px;
+  text-align: right;
+  padding-right: 12px;
+  color: var(--vscode-editorLineNumber-foreground, #555);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.file-line .line-content {
+  flex: 1;
+  white-space: pre;
+  padding-left: calc(1ch + 4px);
+}
+
+.file-line.unchanged {
+  background: transparent;
+}
+
+/* ---- Diff hunk inside the file ---- */
+.inline-hunk {
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  margin: 4px 0;
+  overflow: hidden;
+}
+
+.diff-line {
+  padding: 0 12px;
+  white-space: pre;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: var(--vscode-editor-font-size, 13px);
+  line-height: 1.5;
+  display: flex;
+}
+
+.diff-line .line-number {
+  display: inline-block;
+  min-width: 40px;
+  text-align: right;
+  padding-right: 12px;
+  color: var(--vscode-editorLineNumber-foreground, #555);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.diff-line .line-content {
+  flex: 1;
+  white-space: pre;
+}
+
+.diff-prefix {
+  user-select: none;
+  margin-right: 4px;
+}
+
+.diff-line.add {
+  background: #0e2805;
+}
+
+.diff-line.add .line-number,
+.diff-line.add .diff-prefix {
+  color: #71c35f;
+}
+
+.diff-line.remove {
+  background: #370602;
+}
+
+.diff-line.remove .line-number,
+.diff-line.remove .diff-prefix {
+  color: #c35c58;
+}
+
+.diff-line.context {
+  background: transparent;
+  opacity: 0.85;
+}
+
+/* ---- Inline hunk actions (right after last changed line) ---- */
+.hunk-inline-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--vscode-editor-background);
+}
+
+.hunk-inline-actions button {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--vscode-font-family, sans-serif);
+}
+
+/* ---- Shared button styles ---- */
+.btn-approve {
+  background: #328f13;
+  color: #fff;
+}
+
+.btn-approve:hover {
+  opacity: 0.85;
+}
+
+.btn-reject {
+  background: #9e1306;
+  color: #fff;
+}
+
+.btn-reject:hover {
+  opacity: 0.85;
+}
+
+/* ---- Approved hunk: hide removed lines, remove border ---- */
+.inline-hunk.approved .diff-line.remove {
+  display: none;
+}
+
+.inline-hunk.approved .hunk-inline-actions {
+  display: none;
+}
+
+.inline-hunk.approved {
+  border: none;
+  margin: 0;
+  border-radius: 0;
+}
+
+/* ---- Rejected hunk: fade out ---- */
+.inline-hunk.rejected {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.inline-hunk.rejected .hunk-inline-actions {
+  display: none;
+}
+
+.inline-hunk.rejected {
+  border-color: var(--vscode-testing-iconFailed, #f48771);
+}
+
+/* ---- Status badge ---- */
+.hunk-status-badge {
+  padding: 2px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  text-align: right;
+  font-family: var(--vscode-font-family, sans-serif);
+}
+
+.hunk-status-badge.approved {
+  color: var(--vscode-testing-iconPassed, #89d185);
+}
+
+.hunk-status-badge.rejected {
+  color: var(--vscode-testing-iconFailed, #f48771);
+}
+
+.hunk-status-badge.undoable {
+  cursor: pointer;
+}
+
+.hunk-status-badge.undoable.undo-hover {
+  color: #aaaaaa;
+}
+
+/* ---- Scroll map ---- */
+.scroll-map {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 100vh;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.scroll-map-marker {
+  position: absolute;
+  right: 0;
+  width: 10px;
+  min-height: 3px;
+  pointer-events: auto;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.scroll-map-marker:hover {
+  opacity: 1;
+  width: 14px;
+}
+
+.scroll-map-marker.add {
+  background: #71c35f;
+}
+
+.scroll-map-marker.remove {
+  background: #c35c58;
+}
+
+.scroll-map-marker.mixed {
+  background: #d19a66;
+}
+
+/* ---- Notices ---- */
+.binary-notice,
+.empty-notice {
+  padding: 20px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+}
+
+/* ==========================================================================
+   Syntax Highlighting — highlight.js token classes
+   Colors derived from VS Code's default Dark+/Light+ themes.
+   Adapts automatically via data-vscode-theme-kind set by the webview host.
+   ========================================================================== */
+
+/* ---- Dark theme (default) ---- */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in,
+.hljs-name {
+  color: #569cd6;
+}
+
+.hljs-type,
+.hljs-class .hljs-title,
+.hljs-title.class_,
+.hljs-tag {
+  color: #4ec9b0;
+}
+
+.hljs-string,
+.hljs-template-variable,
+.hljs-addition {
+  color: #ce9178;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #6a9955;
+  font-style: italic;
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-variable.constant_ {
+  color: #b5cea8;
+}
+
+.hljs-attr,
+.hljs-attribute,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  color: #9cdcfe;
+}
+
+.hljs-variable,
+.hljs-params {
+  color: #9cdcfe;
+}
+
+.hljs-function,
+.hljs-title.function_ {
+  color: #dcdcaa;
+}
+
+.hljs-regexp {
+  color: #d16969;
+}
+
+.hljs-operator,
+.hljs-punctuation {
+  color: #d4d4d4;
+}
+
+.hljs-meta,
+.hljs-meta .hljs-keyword {
+  color: #c586c0;
+}
+
+.hljs-deletion {
+  color: #f48771;
+}
+
+/* ---- Light theme overrides ---- */
+[data-vscode-theme-kind="vscode-light"] .hljs-keyword,
+[data-vscode-theme-kind="vscode-light"] .hljs-selector-tag,
+[data-vscode-theme-kind="vscode-light"] .hljs-built_in,
+[data-vscode-theme-kind="vscode-light"] .hljs-name {
+  color: #0000ff;
+}
+
+[data-vscode-theme-kind="vscode-light"] .hljs-type,
+[data-vscode-theme-kind="vscode-light"] .hljs-class .hljs-title,
+[data-vscode-theme-kind="vscode-light"] .hljs-title.class_,
+[data-vscode-theme-kind="vscode-light"] .hljs-tag {
+  color: #267f99;
+}
+
+[data-vscode-theme-kind="vscode-light"] .hljs-string,
+[data-vscode-theme-kind="vscode-light"] .hljs-template-variable,
+[data-vscode-theme-kind="vscode-light"] .hljs-addition {
+  color: #a31515;
+}
+
+[data-vscode-theme-kind="vscode-light"] .hljs-comment,
+[data-vscode-theme-kind="vscode-light"] .hljs-quote {
+  color: #008000;
+}
+
+[data-vscode-theme-kind="vscode-light"] .hljs-number,
+[data-vscode-theme-kind="vscode-light"] .hljs-literal,
+[data-vscode-theme-kind="vscode-light"] .hljs-variable.constant_ {
+  color: #098658;
+}
+
+[data-vscode-theme-kind="vscode-light"] .hljs-attr,
+[data-vscode-theme-kind="vscode-light"] .hljs-attribute,
+[data-vscode-theme-kind="vscode-light"] .hljs-variable,
+[data-vscode-theme-kind="vscode-light"] .hljs-params {
+  color: #001080;
+}
+
+[data-vscode-theme-kind="vscode-light"] .hljs-function,
+[data-vscode-theme-kind="vscode-light"] .hljs-title.function_ {
+  color: #795e26;
+}
+
+[data-vscode-theme-kind="vscode-light"] .hljs-operator,
+[data-vscode-theme-kind="vscode-light"] .hljs-punctuation {
+  color: #000;
+}
+
+[data-vscode-theme-kind="vscode-light"] .hljs-meta,
+[data-vscode-theme-kind="vscode-light"] .hljs-meta .hljs-keyword {
+  color: #af00db;
+}
