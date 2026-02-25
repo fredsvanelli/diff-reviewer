@@ -24,6 +24,104 @@ body {
   z-index: 10;
 }
 
+/* ---- Floating action bar ---- */
+.floating-bar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--vscode-titleBar-activeBackground, #1e1e2e);
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+}
+
+.floating-bar .pending-count {
+  font-size: 12px;
+  font-family: var(--vscode-font-family, sans-serif);
+  color: var(--vscode-descriptionForeground);
+  margin-right: 4px;
+}
+
+.floating-bar .bar-separator {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 2px;
+}
+
+.floating-bar button {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--vscode-font-family, sans-serif);
+  font-weight: 500;
+}
+
+.floating-bar .btn-nav {
+  background: transparent;
+  color: var(--vscode-foreground);
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.floating-bar .btn-nav:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.floating-bar .btn-nav svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  display: block;
+}
+
+[data-vscode-theme-kind='vscode-light'] .floating-bar {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+[data-vscode-theme-kind='vscode-light'] .floating-bar .btn-nav:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* ---- Settings drop-up ---- */
+.settings-wrap {
+  position: relative;
+}
+
+.drop-up {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: var(--vscode-titleBar-activeBackground, #1e1e2e);
+  border-radius: 6px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+}
+
+.drop-up.open {
+  display: block;
+}
+
+[data-vscode-theme-kind='vscode-light'] .drop-up {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
 .top-bar-title-group {
   display: flex;
   align-items: center;
@@ -49,14 +147,77 @@ body {
 }
 
 .top-bar-actions {
+  display: none;
+}
+
+/* ---- Auto-scroll checkbox ---- */
+.auto-scroll-label {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--vscode-font-family, sans-serif);
+  margin-right: 6px;
+}
+
+.auto-scroll-label input[type='checkbox'] {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  position: relative;
+  margin: 0;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.auto-scroll-label input[type='checkbox']:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.auto-scroll-label input[type='checkbox']:checked {
+  background: #6572a2;
+}
+
+.auto-scroll-label input[type='checkbox']:checked:hover {
+  background: #3388dd;
+}
+
+.auto-scroll-label input[type='checkbox']:checked::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 5.5px;
+  width: 4px;
+  height: 7px;
+  border: solid #fff;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+
+.auto-scroll-label input[type='checkbox']:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder, #007acc);
+  outline-offset: 1px;
+}
+
+[data-vscode-theme-kind='vscode-light'] .auto-scroll-label input[type='checkbox'] {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+[data-vscode-theme-kind='vscode-light'] .auto-scroll-label input[type='checkbox']:hover {
+  background: rgba(0, 0, 0, 0.22);
 }
 
 .top-bar-actions button {
   padding: 6px 12px;
   border: none;
-  border-radius: 3px;
+  border-radius: 2px;
   cursor: pointer;
   font-size: 12px;
   font-family: var(--vscode-font-family, sans-serif);
@@ -66,6 +227,7 @@ body {
 /* ---- File content area ---- */
 .file-content {
   padding: 0;
+  padding-bottom: 60px;
 }
 
 .file-line {
@@ -169,7 +331,7 @@ body {
 .hunk-inline-actions button {
   padding: 4px 10px;
   border: none;
-  border-radius: 3px;
+  border-radius: 2px;
   cursor: pointer;
   font-size: 11px;
   font-family: var(--vscode-font-family, sans-serif);
@@ -177,7 +339,7 @@ body {
 
 /* ---- Shared button styles ---- */
 .btn-approve {
-  background: #328f13;
+  background: #2e5919;
   color: #fff;
 }
 
@@ -186,7 +348,7 @@ body {
 }
 
 .btn-reject {
-  background: #9e1306;
+  background: #73240a;
   color: #fff;
 }
 

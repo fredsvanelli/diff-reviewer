@@ -14,7 +14,7 @@ export class FileTreeProvider implements vscode.TreeDataProvider<DiffFile> {
     private git: GitAdapter,
     private stateManager: StateManager,
   ) {
-    //
+    // A
   }
 
   async refresh(): Promise<void> {
@@ -47,7 +47,7 @@ export class FileTreeProvider implements vscode.TreeDataProvider<DiffFile> {
 
     const statuses = this.stateManager.syncStatuses(element);
     const pendingCount = statuses.filter((s) => s === 'pending').length;
-    const badge = pendingCount > 9 ? '9+' : String(pendingCount);
+    const badge = pendingCount > 99 ? '99+' : String(pendingCount);
 
     const label: vscode.TreeItemLabel = {
       label: ` (${badge})  ${fileName}`,

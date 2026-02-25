@@ -9,6 +9,9 @@ let currentFilePath = '';
 /** @type {string[]} */
 let currentHighlightedLines = [];
 
+let autoScroll = true;
+let pendingAutoScroll = false;
+
 const container = document.getElementById('container');
 
 // Signal to the extension that we're ready to receive data
@@ -30,6 +33,10 @@ window.addEventListener('message', (event) => {
       currentHighlightedLines = msg.highlightedLines || [];
       renderFile(msg.file, msg.hunkStatuses, msg.fileContent || [], currentHighlightedLines);
       vscode.setState({ file: msg.file, hunkStatuses: msg.hunkStatuses, fileContent: msg.fileContent || [], highlightedLines: currentHighlightedLines });
+      if (pendingAutoScroll && autoScroll) {
+        pendingAutoScroll = false;
+        requestAnimationFrame(() => scrollToFirstPendingHunk());
+      }
       break;
 
     case 'updateHunk':
@@ -82,30 +89,12 @@ function renderFile(file, hunkStatuses, fileContent, highlightedLines) {
 
   topBar.appendChild(titleGroup);
 
-  const hasPending = hunkStatuses.some((/** @type {string} */ s) => s === 'pending');
-  if (hasPending) {
-    const actions = document.createElement('div');
-    actions.className = 'top-bar-actions';
-
-    const approveAllBtn = document.createElement('button');
-    approveAllBtn.className = 'btn-approve';
-    approveAllBtn.textContent = 'Approve All';
-    approveAllBtn.addEventListener('click', () => {
-      vscode.postMessage({ command: 'approveAll', filePath });
-    });
-
-    const rejectAllBtn = document.createElement('button');
-    rejectAllBtn.className = 'btn-reject';
-    rejectAllBtn.textContent = 'Reject All';
-    makeRejectWithConfirm(rejectAllBtn, 'Reject All', () => {
-      vscode.postMessage({ command: 'rejectAll', filePath });
-    });
-
-    actions.appendChild(approveAllBtn);
-    actions.appendChild(rejectAllBtn);
-    topBar.appendChild(actions);
-  }
   container.appendChild(topBar);
+
+  const pendingCount = hunkStatuses.filter((/** @type {string} */ s) => s === 'pending').length;
+  if (pendingCount > 0) {
+    createFloatingBar(filePath, pendingCount);
+  }
 
   if (file.isBinary) {
     const notice = document.createElement('div');
@@ -174,8 +163,13 @@ function renderFile(file, hunkStatuses, fileContent, highlightedLines) {
 
   container.appendChild(contentArea);
 
-  // Build scroll map after layout is ready
-  requestAnimationFrame(() => buildScrollMap());
+  // Build scroll map after layout is ready, then auto-scroll to first hunk
+  requestAnimationFrame(() => {
+    buildScrollMap();
+    if (autoScroll) {
+      scrollToFirstPendingHunk();
+    }
+  });
 }
 
 /**
@@ -316,13 +310,14 @@ function createUndoBadge(filePath, index) {
  * @param {() => void} onConfirm
  */
 function makeRejectWithConfirm(btn, originalLabel, onConfirm) {
-  let timerId = /** @type {number|undefined} */ (undefined);
+  let timerId = /** @type {NodeJS.Timeout|undefined} */ (undefined);
+
   btn.addEventListener('click', () => {
-    if (btn.textContent === 'Confirm') {
+    if (btn.textContent === 'Confirm?') {
       clearTimeout(timerId);
       onConfirm();
     } else {
-      btn.textContent = 'Confirm';
+      btn.textContent = 'Confirm?';
       timerId = setTimeout(() => {
         btn.textContent = originalLabel;
       }, 3000);
@@ -350,6 +345,7 @@ function createHunkActions(filePath, index) {
   rejectBtn.className = 'btn-reject';
   rejectBtn.textContent = 'Reject';
   makeRejectWithConfirm(rejectBtn, 'Reject', () => {
+    pendingAutoScroll = true;
     vscode.postMessage({ command: 'reject', filePath, hunkIndex: index });
   });
 
@@ -413,39 +409,212 @@ function updateHunkStatus(hunkIndex, status) {
     vscode.setState(state);
   }
 
-  // Hide/show top-bar actions based on pending hunks
+  // Update floating bar based on pending hunks
   if (container) {
-    const hasPending = container.querySelector('.inline-hunk.pending');
-    const topBar = container.querySelector('.top-bar');
-    const existingActions = container.querySelector('.top-bar-actions');
-    if (!hasPending && existingActions) {
-      existingActions.remove();
-    } else if (hasPending && !existingActions && topBar) {
-      const actions = document.createElement('div');
-      actions.className = 'top-bar-actions';
+    const pendingHunks = container.querySelectorAll('.inline-hunk.pending');
+    createFloatingBar(currentFilePath, pendingHunks.length);
+  }
 
-      const approveAllBtn = document.createElement('button');
-      approveAllBtn.className = 'btn-approve';
-      approveAllBtn.textContent = 'Approve All';
-      approveAllBtn.addEventListener('click', () => {
-        vscode.postMessage({ command: 'approveAll', filePath: currentFilePath });
-      });
-
-      const rejectAllBtn = document.createElement('button');
-      rejectAllBtn.className = 'btn-reject';
-      rejectAllBtn.textContent = 'Reject All';
-      makeRejectWithConfirm(rejectAllBtn, 'Reject All', () => {
-        vscode.postMessage({ command: 'rejectAll', filePath: currentFilePath });
-      });
-
-      actions.appendChild(approveAllBtn);
-      actions.appendChild(rejectAllBtn);
-      topBar.appendChild(actions);
-    }
+  // Auto-scroll to next pending hunk after approve
+  if (autoScroll && status !== 'pending') {
+    scrollToNextPendingHunk(hunkIndex);
   }
 
   // Refresh scroll map after status change
   requestAnimationFrame(() => buildScrollMap());
+}
+
+/**
+ * Create (or recreate) the floating action bar at the bottom-center.
+ * @param {string} filePath
+ * @param {number} pendingCount
+ */
+function createFloatingBar(filePath, pendingCount) {
+  const existing = document.getElementById('floating-bar');
+  if (existing) existing.remove();
+
+  if (pendingCount <= 0) return;
+
+  const bar = document.createElement('div');
+  bar.className = 'floating-bar';
+  bar.id = 'floating-bar';
+
+  const countEl = document.createElement('span');
+  countEl.className = 'pending-count';
+  countEl.textContent = `${pendingCount} left`;
+  bar.appendChild(countEl);
+
+  const sep2 = document.createElement('span');
+  sep2.className = 'bar-separator';
+  bar.appendChild(sep2);
+
+  const acceptBtn = document.createElement('button');
+  acceptBtn.className = 'btn-approve';
+  acceptBtn.textContent = 'Accept file';
+  makeRejectWithConfirm(acceptBtn, 'Accept file', () => {
+    pendingAutoScroll = true;
+    vscode.postMessage({ command: 'approveAll', filePath });
+  });
+  bar.appendChild(acceptBtn);
+
+  const rejectBtn = document.createElement('button');
+  rejectBtn.className = 'btn-reject';
+  rejectBtn.textContent = 'Reject file';
+  makeRejectWithConfirm(rejectBtn, 'Reject file', () => {
+    pendingAutoScroll = true;
+    vscode.postMessage({ command: 'rejectAll', filePath });
+  });
+  bar.appendChild(rejectBtn);
+
+  const sep3 = document.createElement('span');
+  sep3.className = 'bar-separator';
+  bar.appendChild(sep3);
+
+  const upBtn = document.createElement('button');
+  upBtn.className = 'btn-nav btn-up';
+  upBtn.title = 'Previous hunk';
+  upBtn.innerHTML = '<svg viewBox="0 0 640 640"><path d="M342.6 73.4C330.1 60.9 309.8 60.9 297.3 73.4L137.3 233.4C124.8 245.9 124.8 266.2 137.3 278.7C149.8 291.2 170.1 291.2 182.6 278.7L288 173.3L288 544C288 561.7 302.3 576 320 576C337.7 576 352 561.7 352 544L352 173.3L457.4 278.7C469.9 291.2 490.2 291.2 502.7 278.7C515.2 266.2 515.2 245.9 502.7 233.4L342.7 73.4z"/></svg>';
+  upBtn.addEventListener('click', () => navigateHunk('prev'));
+  bar.appendChild(upBtn);
+
+  const downBtn = document.createElement('button');
+  downBtn.className = 'btn-nav btn-down';
+  downBtn.title = 'Next hunk';
+  downBtn.innerHTML = '<svg viewBox="0 0 640 640"><path d="M297.4 566.6C309.9 579.1 330.2 579.1 342.7 566.6L502.7 406.6C515.2 394.1 515.2 373.8 502.7 361.3C490.2 348.8 469.9 348.8 457.4 361.3L352 466.7L352 96C352 78.3 337.7 64 320 64C302.3 64 288 78.3 288 96L288 466.7L182.6 361.3C170.1 348.8 149.8 348.8 137.3 361.3C124.8 373.8 124.8 394.1 137.3 406.6L297.3 566.6z"/></svg>';
+  downBtn.addEventListener('click', () => navigateHunk('next'));
+  bar.appendChild(downBtn);
+
+  const sep4 = document.createElement('span');
+  sep4.className = 'bar-separator';
+  bar.appendChild(sep4);
+
+  const settingsWrap = document.createElement('div');
+  settingsWrap.className = 'settings-wrap';
+
+  const settingsBtn = document.createElement('button');
+  settingsBtn.className = 'btn-nav btn-settings';
+  settingsBtn.title = 'Options';
+  settingsBtn.innerHTML = '<svg viewBox="0 0 640 640"><path d="M320 208C289.1 208 264 182.9 264 152C264 121.1 289.1 96 320 96C350.9 96 376 121.1 376 152C376 182.9 350.9 208 320 208zM320 432C350.9 432 376 457.1 376 488C376 518.9 350.9 544 320 544C289.1 544 264 518.9 264 488C264 457.1 289.1 432 320 432zM376 320C376 350.9 350.9 376 320 376C289.1 376 264 350.9 264 320C264 289.1 289.1 264 320 264C350.9 264 376 289.1 376 320z"/></svg>';
+
+  const dropUp = document.createElement('div');
+  dropUp.className = 'drop-up';
+  dropUp.appendChild(createAutoScrollCheckbox());
+
+  settingsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropUp.classList.toggle('open');
+  });
+
+  settingsWrap.appendChild(dropUp);
+  settingsWrap.appendChild(settingsBtn);
+  bar.appendChild(settingsWrap);
+
+  document.addEventListener('click', (e) => {
+    if (!settingsWrap.contains(/** @type {Node} */ (e.target))) {
+      dropUp.classList.remove('open');
+    }
+  });
+
+  document.body.appendChild(bar);
+}
+
+/**
+ * Navigate to the previous or next pending hunk relative to the current scroll position.
+ * @param {'prev' | 'next'} direction
+ */
+function navigateHunk(direction) {
+  if (!container) return;
+  const hunks = /** @type {HTMLElement[]} */ (Array.from(container.querySelectorAll('.inline-hunk.pending')));
+  if (hunks.length === 0) return;
+
+  const viewportCenter = window.scrollY + window.innerHeight / 2;
+
+  if (direction === 'next') {
+    for (const hunk of hunks) {
+      const rect = hunk.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2 + window.scrollY;
+      if (mid > viewportCenter + 10) {
+        hunk.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    }
+    // Wrap to first
+    hunks[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } else {
+    for (let i = hunks.length - 1; i >= 0; i--) {
+      const rect = hunks[i].getBoundingClientRect();
+      const mid = rect.top + rect.height / 2 + window.scrollY;
+      if (mid < viewportCenter - 10) {
+        hunks[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    }
+    // Wrap to last
+    hunks[hunks.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+/**
+ * Create the auto-scroll checkbox element.
+ * @returns {HTMLElement}
+ */
+function createAutoScrollCheckbox() {
+  const label = document.createElement('label');
+  label.className = 'auto-scroll-label';
+
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked = autoScroll;
+  checkbox.addEventListener('change', () => {
+    autoScroll = checkbox.checked;
+  });
+
+  const text = document.createElement('span');
+  text.textContent = 'Auto scroll';
+
+  label.appendChild(checkbox);
+  label.appendChild(text);
+  return label;
+}
+
+/**
+ * Scroll to the next pending hunk after the given hunk index (DOM order).
+ * Wraps around to the first pending hunk if none found after current.
+ * @param {number} currentHunkIndex
+ */
+function scrollToNextPendingHunk(currentHunkIndex) {
+  if (!container) return;
+
+  const allHunks = container.querySelectorAll('.inline-hunk');
+  let foundCurrent = false;
+
+  for (const hunk of allHunks) {
+    if (Number(hunk.dataset.hunkIndex) === currentHunkIndex) {
+      foundCurrent = true;
+      continue;
+    }
+    if (foundCurrent && hunk.classList.contains('pending')) {
+      hunk.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+  }
+
+  // Wrap around to first pending
+  const firstPending = container.querySelector('.inline-hunk.pending');
+  if (firstPending) {
+    firstPending.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+/**
+ * Scroll to the first pending hunk in the file.
+ */
+function scrollToFirstPendingHunk() {
+  if (!container) return;
+  const firstPending = container.querySelector('.inline-hunk.pending');
+  if (firstPending) {
+    firstPending.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 /**
