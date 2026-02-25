@@ -458,8 +458,8 @@ function buildScrollMap() {
 
   if (!container) return;
 
-  const pendingHunks = container.querySelectorAll('.inline-hunk.pending');
-  if (pendingHunks.length === 0) return;
+  const visibleHunks = container.querySelectorAll('.inline-hunk.pending, .inline-hunk.approved');
+  if (visibleHunks.length === 0) return;
 
   const totalHeight = document.documentElement.scrollHeight;
   if (totalHeight <= window.innerHeight) return; // no scrollbar visible
@@ -468,11 +468,13 @@ function buildScrollMap() {
   mapEl.className = 'scroll-map';
   mapEl.id = 'scroll-map';
 
-  for (const hunkEl of pendingHunks) {
+  for (const hunkEl of visibleHunks) {
     const rect = hunkEl.getBoundingClientRect();
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
     const absTop = rect.top + scrollTop;
     const absHeight = rect.height;
+
+    const isApproved = hunkEl.classList.contains('approved');
 
     // Determine marker type based on diff line types present
     const hasAdd = hunkEl.querySelector('.diff-line.add') !== null;
@@ -480,6 +482,8 @@ function buildScrollMap() {
     let markerClass = 'mixed';
     if (hasAdd && !hasRemove) markerClass = 'add';
     else if (hasRemove && !hasAdd) markerClass = 'remove';
+
+    if (isApproved) markerClass += ' approved';
 
     const marker = document.createElement('div');
     marker.className = `scroll-map-marker ${markerClass}`;

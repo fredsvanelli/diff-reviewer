@@ -289,6 +289,10 @@ body {
   background: #d19a66;
 }
 
+.scroll-map-marker.approved {
+  opacity: 0.35;
+}
+
 /* ---- Notices ---- */
 .binary-notice,
 .empty-notice {
