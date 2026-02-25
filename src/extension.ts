@@ -1,3 +1,4 @@
+import { join } from 'path';
 import * as vscode from 'vscode';
 import { GitAdapter } from './git/gitAdapter';
 import { FileTreeProvider } from './sidebar/fileTreeProvider';
@@ -20,7 +21,7 @@ async function getFileData(
   return { fileContent, highlightedLines };
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   if (!workspaceFolder) {
     vscode.window.showErrorMessage('Diff Reviewer: No workspace folder open.');
@@ -28,6 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   git = new GitAdapter(workspaceFolder.uri.fsPath);
+  await git.init();
   stateManager = new StateManager(git, context.workspaceState);
   fileTreeProvider = new FileTreeProvider(git, stateManager);
 
@@ -157,11 +159,8 @@ async function handleWebviewMessage(msg: WebviewToExtMessage): Promise<void> {
   }
 
   if (msg.command === 'openInEditor') {
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-    if (workspaceFolder) {
-      const fileUri = vscode.Uri.joinPath(workspaceFolder.uri, msg.filePath);
-      await vscode.window.showTextDocument(fileUri, { preview: false });
-    }
+    const fileUri = vscode.Uri.file(join(git.getRepoRoot(), msg.filePath));
+    await vscode.window.showTextDocument(fileUri, { preview: false });
     return;
   }
 

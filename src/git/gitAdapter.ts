@@ -5,7 +5,23 @@ import { DiffFile } from '../types';
 import { parseDiff, splitHunks, computeHunkIds } from './diffParser';
 
 export class GitAdapter {
+  private repoRoot: string | undefined;
+
   constructor(private workspaceRoot: string) {}
+
+  /**
+   * Discover the git repository root. Must be called before other methods
+   * when the workspace folder may differ from the git root (e.g. monorepos).
+   */
+  async init(): Promise<void> {
+    const toplevel = await this.exec(['rev-parse', '--show-toplevel']);
+    this.repoRoot = toplevel.trim();
+  }
+
+  /** Return the resolved git repo root (falls back to workspaceRoot). */
+  getRepoRoot(): string {
+    return this.repoRoot ?? this.workspaceRoot;
+  }
 
   /**
    * Get the parsed diff of all uncommitted changes (staged + unstaged vs HEAD).
@@ -57,7 +73,7 @@ export class GitAdapter {
    * Read the current working-tree content of a file, split into lines.
    */
   async getFileContent(filePath: string): Promise<string[]> {
-    const absPath = join(this.workspaceRoot, filePath);
+    const absPath = join(this.getRepoRoot(), filePath);
     const content = await readFile(absPath, 'utf-8');
     return content.split('\n');
   }
@@ -75,7 +91,7 @@ export class GitAdapter {
       execFile(
         'git',
         args,
-        { cwd: this.workspaceRoot, maxBuffer: 10 * 1024 * 1024 },
+        { cwd: this.getRepoRoot(), maxBuffer: 10 * 1024 * 1024 },
         (err, stdout, stderr) => {
           if (err) {
             reject(new Error(`git ${args[0]} failed: ${stderr || err.message}`));
@@ -89,7 +105,7 @@ export class GitAdapter {
 
   private execStdin(args: string[], stdin: string): Promise<string> {
     return new Promise((resolve, reject) => {
-      const proc = execFile('git', args, { cwd: this.workspaceRoot }, (err, stdout, stderr) => {
+      const proc = execFile('git', args, { cwd: this.getRepoRoot() }, (err, stdout, stderr) => {
         if (err) {
           reject(new Error(`git ${args[0]} failed: ${stderr || err.message}`));
           return;

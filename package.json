@@ -2,7 +2,13 @@
   "name": "diff-reviewer",
   "displayName": "Diff Reviewer",
   "description": "Interactive diff review UI for approving or rejecting individual hunks",
-  "version": "0.0.1",
+  "version": "0.0.2-beta",
+  "publisher": "fredsvanelli",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fredsvanelli/diff-reviewer.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -82,6 +88,7 @@
     }
   },
   "scripts": {
+    "vscode:prepublish": "npm run build",
     "build": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
     "test": "node --import tsx --test test/*.test.ts",

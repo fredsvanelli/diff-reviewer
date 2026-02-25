@@ -1,8 +1,8 @@
-import * as vscode from 'vscode';
 import * as path from 'path';
-import { DiffFile } from '../types';
+import * as vscode from 'vscode';
 import { GitAdapter } from '../git/gitAdapter';
 import { StateManager } from '../state/stateManager';
+import { DiffFile } from '../types';
 
 export class FileTreeProvider implements vscode.TreeDataProvider<DiffFile> {
   private _onDidChangeTreeData = new vscode.EventEmitter<DiffFile | undefined>();
@@ -13,7 +13,9 @@ export class FileTreeProvider implements vscode.TreeDataProvider<DiffFile> {
   constructor(
     private git: GitAdapter,
     private stateManager: StateManager,
-  ) {}
+  ) {
+    //
+  }
 
   async refresh(): Promise<void> {
     this.files = await this.git.getDiff();
@@ -48,8 +50,8 @@ export class FileTreeProvider implements vscode.TreeDataProvider<DiffFile> {
     const badge = pendingCount > 9 ? '9+' : String(pendingCount);
 
     const label: vscode.TreeItemLabel = {
-      label: `${badge}  ${fileName}`,
-      highlights: [[0, badge.length]],
+      label: ` (${badge})  ${fileName}`,
+      highlights: [[0, badge.length + 4]],
     };
     const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
     item.description = dirPath === '.' ? '' : dirPath + '/';
