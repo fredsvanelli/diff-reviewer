@@ -34,9 +34,16 @@ export async function activate(context: vscode.ExtensionContext) {
   fileTreeProvider = new FileTreeProvider(git, stateManager);
 
   // Sidebar tree view
-  context.subscriptions.push(
-    vscode.window.registerTreeDataProvider('diffReviewer.fileTree', fileTreeProvider),
-  );
+  const treeView = vscode.window.createTreeView('diffReviewer.fileTree', {
+    treeDataProvider: fileTreeProvider,
+  });
+  context.subscriptions.push(treeView);
+
+  // Update badge when tree data changes
+  fileTreeProvider.onDidChangeTreeData(() => {
+    const count = fileTreeProvider.getFiles().length;
+    treeView.badge = count > 0 ? { value: count, tooltip: `${count} modified files` } : undefined;
+  });
 
   // Webview panel provider
   diffPanelProvider = new DiffPanelProvider(
