@@ -51,3 +51,15 @@ Tests use `node:test` and `node:assert/strict` (not Jest/Mocha). Test files are 
 - Prettier: single quotes, trailing commas, 100 char width, 2-space indent
 - ESLint with typescript-eslint, unused vars prefixed with `_`
 - Node 22 (see `.nvmrc`)
+
+## Before Every Commit
+
+Before creating any commit, always:
+
+1. **Bump the version in `package.json`** following SemVer:
+   - `patch` (x.x.+1) — bug fixes only
+   - `minor` (x.+1.0) — new features, backwards-compatible
+   - `major` (+1.0.0) — breaking changes
+   - Keep the `-rc` / `-beta` pre-release suffix if the release is not yet stable
+
+2. **Update `CHANGELOG.md`** — add a new section at the top for the new version with the release date and a summary of changes under `### Added`, `### Fixed`, and/or `### Changed` headings as appropriate.
