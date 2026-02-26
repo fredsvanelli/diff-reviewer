@@ -23,6 +23,8 @@ export interface DiffFile {
   isBinary: boolean;
   /** Raw diff header lines (--- and +++ lines) */
   diffHeader: string[];
+  /** True for files not yet tracked by git (new, never staged) */
+  isUntracked?: boolean;
 }
 
 export type HunkStatus = 'pending' | 'approved' | 'rejected';
@@ -37,8 +39,10 @@ export interface UndoEntry {
   type: 'approve' | 'reject';
   filePath: string;
   hunkId: string;
-  /** For reject undo: the forward patch to re-apply */
+  /** For reject undo of tracked files: the forward patch to re-apply via git apply */
   forwardPatch?: string;
+  /** For reject undo of untracked files: lines to re-insert at the given 0-indexed position */
+  untrackedInsert?: { lineIndex: number; lines: string[] };
 }
 
 // Extension → Webview messages

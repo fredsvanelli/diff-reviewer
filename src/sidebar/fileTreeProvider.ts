@@ -56,6 +56,9 @@ export class FileTreeProvider implements vscode.TreeDataProvider<DiffFile> {
     const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
     item.description = dirPath === '.' ? '' : dirPath + '/';
     item.contextValue = 'diffFile';
+    if (element.isUntracked) {
+      item.iconPath = new vscode.ThemeIcon('new-file');
+    }
     item.command = {
       command: 'diffReviewer.openFile',
       title: 'Open Diff View',

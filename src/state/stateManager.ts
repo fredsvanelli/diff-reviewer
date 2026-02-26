@@ -161,12 +161,22 @@ export class StateManager {
       return null;
     }
 
-    const patch = buildPatch(file, hunk);
-    const forwardPatch = patch;
-
-    await this.git.applyReverse(patch);
-
-    this.undoStack.push({ type: 'reject', filePath, hunkId, forwardPatch });
+    if (file.isUntracked) {
+      await this.git.rejectUntrackedHunk(filePath, hunk);
+      this.undoStack.push({
+        type: 'reject',
+        filePath,
+        hunkId,
+        untrackedInsert: {
+          lineIndex: hunk.newStart - 1,
+          lines: hunk.lines.map((l) => l.content),
+        },
+      });
+    } else {
+      const patch = buildPatch(file, hunk);
+      await this.git.applyReverse(patch);
+      this.undoStack.push({ type: 'reject', filePath, hunkId, forwardPatch: patch });
+    }
 
     const map = this.statuses.get(filePath);
     if (map) {
@@ -219,8 +229,16 @@ export class StateManager {
       if (map && map.has(entry.hunkId)) {
         map.set(entry.hunkId, 'pending');
       }
-    } else if (entry.type === 'reject' && entry.forwardPatch) {
-      await this.git.applyForward(entry.forwardPatch);
+    } else if (entry.type === 'reject') {
+      if (entry.forwardPatch) {
+        await this.git.applyForward(entry.forwardPatch);
+      } else if (entry.untrackedInsert) {
+        await this.git.reInsertUntrackedLines(
+          entry.filePath,
+          entry.untrackedInsert.lineIndex,
+          entry.untrackedInsert.lines,
+        );
+      }
     }
 
     this.persist();
@@ -296,14 +314,5 @@ export class StateManager {
  * suitable for piping to `git apply`.
  */
 function buildPatch(file: DiffFile, hunk: DiffHunk): string {
-  const lines: string[] = [];
-
-  lines.push(`--- a/${file.oldPath || file.newPath}`);
-  lines.push(`+++ b/${file.newPath || file.oldPath}`);
-
-  for (const rawLine of hunk.rawLines) {
-    lines.push(rawLine);
-  }
-
-  return lines.join('\n') + '\n';
+  return [...file.diffHeader, ...hunk.rawLines].join('\n') + '\n';
 }
