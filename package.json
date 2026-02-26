@@ -2,7 +2,7 @@
   "name": "diff-reviewer",
   "displayName": "Diff Reviewer",
   "description": "Interactive diff review UI for approving or rejecting individual hunks",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publisher": "fredsvanelli",
   "license": "MIT",
   "repository": {
@@ -35,6 +35,9 @@
     "url": "https://github.com/fredsvanelli/diff-reviewer/issues"
   },
   "qna": "https://github.com/fredsvanelli/diff-reviewer/discussions",
+  "activationEvents": [
+    "workspaceContains:.git"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {

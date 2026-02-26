@@ -2,6 +2,11 @@
 
 All notable changes to **Diff Reviewer** are documented in this file.
 
+## [1.1.1] — 2026-02-25
+
+### Fixed
+- Add missing `activationEvents` property required by `vsce` for extensions with a `main` entry point
+
 ## [1.1.0] — 2026-02-25
 
 ### Added
