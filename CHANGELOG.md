@@ -2,6 +2,13 @@
 
 All notable changes to **Diff Reviewer** are documented in this file.
 
+## [1.1.0] — 2026-02-25
+
+### Added
+- Untracked files (never staged) now appear in the pending list and can be reviewed hunk-by-hunk
+- Binary and non-text files (images, PDFs, archives, videos, fonts, compiled binaries, etc.) are automatically excluded from the diff tree
+- Undo support extended to cover reject actions on untracked files
+
 ## [1.0.1-rc] — 2026-02-25
 
 ### Fixed

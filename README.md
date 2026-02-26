@@ -1,120 +1,51 @@
 # Diff Reviewer
 
-A VS Code extension for interactive diff review. It shows your uncommitted changes (staged + unstaged vs HEAD) in a sidebar file tree and opens per-file webview panels where you can approve or reject individual hunks. Rejecting a hunk reverse-applies it on disk; approving marks it as reviewed. All actions are undoable.
+**Diff Reviewer** is a VS Code extension that brings an interactive, hunk-by-hunk review workflow directly into your editor. Browse your uncommitted changes in a sidebar, open any file to see its diff inline, and approve or reject individual change groups - all without leaving VS Code.
+
+![Diff Reviewer in action](images/preview.png)
 
 ## Features
 
-- **Sidebar file tree** — Lists all files with uncommitted changes
-- **Per-hunk review** — Approve or reject individual change groups within a file
-- **Inline diff view** — Full file content with hunks rendered at their line positions (not side-by-side)
-- **Undo support** — Every approve/reject action can be undone
-- **Stable hunk tracking** — Hunk identity is content-based, so approvals survive when hunks shift after edits
-- **Syntax highlighting** — Server-side highlighting via highlight.js
-- **Theme-aware** — Integrates with VS Code light/dark themes
+- **Sidebar file tree** - All files with uncommitted changes (staged + unstaged vs HEAD) listed in one place, including untracked new files
+- **Inline diff view** - Full file content with change hunks highlighted at their exact line positions - no side-by-side pane switching
+- **Per-hunk approve / reject** - Review each change group independently; rejecting a hunk reverse-applies it on disk immediately
+- **Approve or reject an entire file** - One-click buttons in the sidebar context menu to bulk-approve or bulk-reject all hunks in a file
+- **Undo everything** - Every approve and reject action is fully undoable
+- **Stable hunk tracking** - Approvals are keyed by content, not line number, so they survive when other hunks shift position after edits
+- **Syntax highlighting** - Server-side highlighting via highlight.js for accurate colorization
+- **Theme-aware** - Seamlessly follows VS Code light and dark themes
 
-## Prerequisites
+## Requirements
 
-- [Node.js](https://nodejs.org/) v22 (see `.nvmrc`)
-- [Git](https://git-scm.com/)
-- [Visual Studio Code](https://code.visualstudio.com/) v1.85 or later
+- **Git** must be installed and available on your `PATH`
+- **VS Code** v1.85 or later
+- Open a folder that contains a Git repository
 
 ## Getting Started
 
-### 1. Clone the repository
+1. Open a Git repository in VS Code
+2. Click the **Diff Reviewer** icon in the Activity Bar (left sidebar)
+3. The **Modified Files** panel lists all files with uncommitted changes
+4. Click any file to open its inline diff view
+5. Use the **Approve** and **Reject** buttons on each hunk to approve or reject it
 
-```sh
-gh repo clone fredsvanelli/diff-reviewer
-# or
-git clone https://github.com/fredsvanelli/diff-reviewer.git
-```
+## Usage
 
-### 2. Install dependencies
+### Reviewing a file
 
-```sh
-npm install
-```
+Click a file in the **Modified Files** panel to open the diff view. Each changed region (hunk) is highlighted inline within the full file context. Use the action buttons on each hunk to:
 
-### 3. Build the extension
+- **Approve** - Mark the hunk as reviewed (no disk change)
+- **Reject** - Reverse-apply the hunk on disk, removing those changes from your working tree
 
-```sh
-npm run build
-```
+### Approving or rejecting an entire file
 
-This bundles both the extension (Node/CommonJS) and the webview (browser/IIFE) into the `out/` directory.
+You can **Approve** (✓) or **Reject** (✗) an entire file directly from the sidebar. This applies the action to every pending hunk in the file at once.
 
-### 4. Run in VS Code
+### Undoing an approval
 
-1. Open the `diff-reviewer` folder in VS Code.
-2. Press **F5** (or go to **Run → Start Debugging**).
-3. A new VS Code window (the Extension Development Host) will open with the extension loaded.
-4. In the Extension Development Host window, open any Git repository that has uncommitted changes.
-5. Click the **Diff Reviewer** icon in the Activity Bar (left sidebar) to see the list of modified files.
-6. Click a file to open the inline diff view and start approving or rejecting hunks.
+After approving a hunk, hover the mouse on top of the "APPROVED" label, it will turn into an "UNDO" button. WARNING: Rejected hunks can't be undone.
 
-### Development Workflow
+## Release Notes
 
-For a faster feedback loop, use watch mode so the extension rebuilds automatically on changes:
-
-```sh
-npm run watch
-```
-
-Then press **F5** in VS Code. After making code changes, reload the Extension Development Host window (**Ctrl+Shift+P** / **Cmd+Shift+P** → "Developer: Reload Window") to pick up the new build.
-
-## Available Commands
-
-| Command | Description |
-|---|---|
-| `Diff Reviewer: Refresh Diff` | Re-read the diff from Git and update the file tree |
-| `Diff Reviewer: Open Diff View` | Open the inline diff panel for a file |
-| `Diff Reviewer: Undo Last Action` | Undo the last approve/reject action |
-| `Diff Reviewer: Approve File` | Mark all hunks in a file as approved |
-| `Diff Reviewer: Reject File` | Reject all hunks in a file (reverse-applies them on disk) |
-
-## Scripts
-
-| Script | Description |
-|---|---|
-| `npm run build` | Bundle extension + webview with esbuild |
-| `npm run watch` | Watch mode for development |
-| `npm test` | Run tests (Node.js built-in test runner with tsx) |
-| `npm run lint` | ESLint + TypeScript type check |
-| `npm run lint:fix` | Auto-fix ESLint issues |
-| `npm run ts:check` | Type check only |
-
-Run a single test file:
-
-```sh
-node --import tsx --test test/diffParser.test.ts
-```
-
-## Project Structure
-
-```
-diff-reviewer/
-├── src/
-│   ├── extension.ts              # Activation, commands, message routing
-│   ├── highlighter.ts            # Syntax highlighting via highlight.js
-│   ├── git/
-│   │   ├── gitAdapter.ts         # Git CLI wrapper (diff, apply, file content)
-│   │   └── diffParser.ts         # Unified diff parser, hunk splitting, hunk IDs
-│   ├── state/
-│   │   └── stateManager.ts       # Hunk status tracking, undo stack, persistence
-│   ├── sidebar/
-│   │   └── fileTreeProvider.ts   # TreeDataProvider for the sidebar file list
-│   └── webview/
-│       └── diffPanelProvider.ts  # Webview panel creation and message handling
-├── media/
-│   ├── webview.js                # Webview UI (inline diff rendering, interactions)
-│   └── webview.css               # Webview styles (VS Code theme integration)
-├── test/                         # Tests (node:test + tsx)
-│   └── fixtures/                 # Test fixtures
-├── out/                          # Build output (gitignored)
-├── esbuild.mjs                   # Build configuration
-├── tsconfig.json
-└── package.json
-```
-
-## License
-
-See [LICENSE](LICENSE) for details.
+See the full [CHANGELOG](CHANGELOG.md) for version history.
