@@ -161,7 +161,11 @@ export class GitAdapter {
    * Used to undo a previous rejectUntrackedHunk call.
    * Re-creates the file if it was deleted.
    */
-  async reInsertUntrackedLines(filePath: string, lineIndex: number, lines: string[]): Promise<void> {
+  async reInsertUntrackedLines(
+    filePath: string,
+    lineIndex: number,
+    lines: string[],
+  ): Promise<void> {
     const absPath = join(this.getRepoRoot(), filePath);
 
     let fileLines: string[] = [];
