@@ -92,9 +92,7 @@ function renderFile(file, hunkStatuses, fileContent, highlightedLines) {
   container.appendChild(topBar);
 
   const pendingCount = hunkStatuses.filter((/** @type {string} */ s) => s === 'pending').length;
-  if (pendingCount > 0) {
-    createFloatingBar(filePath, pendingCount);
-  }
+  createFloatingBar(filePath, pendingCount);
 
   if (file.isBinary) {
     const notice = document.createElement('div');
@@ -303,26 +301,37 @@ function createUndoBadge(filePath, index) {
 
 /**
  * Wrap a button with two-step confirm behavior.
- * First click changes label to "Confirm" for 3 seconds.
- * Second click (while showing "Confirm") executes the action.
+ * First click changes label to "Confirm?" for 3 seconds.
+ * Second click (while showing "Confirm?") executes the action.
+ * Returns a reset function that reverts the button to its original label.
  * @param {HTMLButtonElement} btn
  * @param {string} originalLabel
  * @param {() => void} onConfirm
+ * @param {(() => void)} [resetPeer] - Optional callback to reset a sibling confirm button
+ * @returns {() => void} reset function to revert this button
  */
-function makeRejectWithConfirm(btn, originalLabel, onConfirm) {
+function makeRejectWithConfirm(btn, originalLabel, onConfirm, resetPeer) {
   let timerId = /** @type {NodeJS.Timeout|undefined} */ (undefined);
+
+  const reset = () => {
+    clearTimeout(timerId);
+    btn.textContent = originalLabel;
+  };
 
   btn.addEventListener('click', () => {
     if (btn.textContent === 'Confirm?') {
       clearTimeout(timerId);
       onConfirm();
     } else {
+      if (resetPeer) resetPeer();
       btn.textContent = 'Confirm?';
       timerId = setTimeout(() => {
         btn.textContent = originalLabel;
       }, 3000);
     }
   });
+
+  return reset;
 }
 
 /**
@@ -433,38 +442,43 @@ function createFloatingBar(filePath, pendingCount) {
   const existing = document.getElementById('floating-bar');
   if (existing) existing.remove();
 
-  if (pendingCount <= 0) return;
-
   const bar = document.createElement('div');
   bar.className = 'floating-bar';
   bar.id = 'floating-bar';
 
+  const hasPending = pendingCount > 0;
+
   const countEl = document.createElement('span');
   countEl.className = 'pending-count';
-  countEl.textContent = `${pendingCount} left`;
+  countEl.textContent = hasPending ? `${pendingCount} left` : 'All reviewed';
   bar.appendChild(countEl);
 
-  const sep2 = document.createElement('span');
-  sep2.className = 'bar-separator';
-  bar.appendChild(sep2);
+  if (hasPending) {
+    const sep2 = document.createElement('span');
+    sep2.className = 'bar-separator';
+    bar.appendChild(sep2);
 
-  const acceptBtn = document.createElement('button');
-  acceptBtn.className = 'btn-approve';
-  acceptBtn.textContent = 'Accept file';
-  makeRejectWithConfirm(acceptBtn, 'Accept file', () => {
-    pendingAutoScroll = true;
-    vscode.postMessage({ command: 'approveAll', filePath });
-  });
-  bar.appendChild(acceptBtn);
+    /** @type {{ reset: () => void }} */
+    const peerRef = { reset: () => {} };
 
-  const rejectBtn = document.createElement('button');
-  rejectBtn.className = 'btn-reject';
-  rejectBtn.textContent = 'Reject file';
-  makeRejectWithConfirm(rejectBtn, 'Reject file', () => {
-    pendingAutoScroll = true;
-    vscode.postMessage({ command: 'rejectAll', filePath });
-  });
-  bar.appendChild(rejectBtn);
+    const acceptBtn = document.createElement('button');
+    acceptBtn.className = 'btn-approve';
+    acceptBtn.textContent = 'Accept file';
+    const resetAccept = makeRejectWithConfirm(acceptBtn, 'Accept file', () => {
+      pendingAutoScroll = true;
+      vscode.postMessage({ command: 'approveAll', filePath });
+    }, () => peerRef.reset());
+    bar.appendChild(acceptBtn);
+
+    const rejectBtn = document.createElement('button');
+    rejectBtn.className = 'btn-reject';
+    rejectBtn.textContent = 'Reject file';
+    peerRef.reset = makeRejectWithConfirm(rejectBtn, 'Reject file', () => {
+      pendingAutoScroll = true;
+      vscode.postMessage({ command: 'rejectAll', filePath });
+    }, resetAccept);
+    bar.appendChild(rejectBtn);
+  }
 
   const sep3 = document.createElement('span');
   sep3.className = 'bar-separator';
@@ -524,7 +538,10 @@ function createFloatingBar(filePath, pendingCount) {
  */
 function navigateHunk(direction) {
   if (!container) return;
-  const hunks = /** @type {HTMLElement[]} */ (Array.from(container.querySelectorAll('.inline-hunk.pending')));
+  let hunks = /** @type {HTMLElement[]} */ (Array.from(container.querySelectorAll('.inline-hunk.pending')));
+  if (hunks.length === 0) {
+    hunks = /** @type {HTMLElement[]} */ (Array.from(container.querySelectorAll('.inline-hunk')));
+  }
   if (hunks.length === 0) return;
 
   const viewportCenter = window.scrollY + window.innerHeight / 2;
